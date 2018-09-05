@@ -313,7 +313,7 @@ func TestIBCTransfer(t *testing.T) {
 	// TODO: query ibc egress packet state
 }
 
-func TestCoinSendGenerateOnly(t *testing.T) {
+func TestCoinSendGenerateAndSign(t *testing.T) {
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
