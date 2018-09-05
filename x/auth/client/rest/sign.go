@@ -11,7 +11,8 @@ import (
 	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 )
 
-type signBody struct {
+// SignBody defines the properties of a sign request's body.
+type SignBody struct {
 	Tx               auth.StdTx `json:"tx"`
 	LocalAccountName string     `json:"name"`
 	Password         string     `json:"password"`
@@ -23,7 +24,7 @@ type signBody struct {
 // sign tx REST handler
 func SignTxRequestHandlerFn(cdc *wire.Codec, cliCtx context.CLIContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var m signBody
+		var m SignBody
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())

@@ -26,6 +26,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/stake"
@@ -335,14 +336,7 @@ func TestCoinSendGenerateAndSign(t *testing.T) {
 	accnum := acc.GetAccountNumber()
 	sequence := acc.GetSequence()
 
-	payload := struct {
-		Tx               auth.StdTx `json:"tx"`
-		LocalAccountName string     `json:"name"`
-		Password         string     `json:"password"`
-		ChainID          string     `json:"chain_id"`
-		AccountNumber    int64      `json:"account_number"`
-		Sequence         int64      `json:"sequence"`
-	}{
+	payload := authrest.SignBody{
 		Tx:               msg,
 		LocalAccountName: name,
 		Password:         password,
