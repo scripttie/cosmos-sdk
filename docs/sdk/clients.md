@@ -159,7 +159,6 @@ gaiacli sign \
   unsignedSendTx.json > signedSendTx.json
 ```
 
-
 ### Staking
 
 #### Set up a Validator

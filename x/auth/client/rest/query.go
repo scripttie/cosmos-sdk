@@ -24,6 +24,10 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *wire.Codec, s
 		"/sign",
 		SignTxRequestHandlerFn(cdc, cliCtx),
 	).Methods("POST")
+	r.HandleFunc(
+		"/broadcast",
+		BroadcastTxRequestHandlerFn(cliCtx),
+	).Methods("POST")
 }
 
 // query accountREST Handler
