@@ -36,20 +36,17 @@ func SignTxRequestHandlerFn(cdc *wire.Codec, cliCtx context.CLIContext) http.Han
 			return
 		}
 
-		sig, err := authctx.MakeSignature(m.LocalAccountName, m.Password, auth.StdSignMsg{
+		txCtx := authctx.TxContext{
 			ChainID:       m.ChainID,
 			AccountNumber: m.AccountNumber,
 			Sequence:      m.Sequence,
-			Fee:           m.Tx.Fee,
-			Msgs:          m.Tx.GetMsgs(),
-			Memo:          m.Tx.GetMemo(),
-		})
+		}
+		signedTx, err := txCtx.SignStdTx(m.LocalAccountName, m.Password, m.Tx, false)
 		if err != nil {
 			utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-
-		output, err := wire.MarshalJSONIndent(cdc, authctx.SignStdTx(m.Tx, sig, false))
+		output, err := wire.MarshalJSONIndent(cdc, signedTx)
 		if err != nil {
 			utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return

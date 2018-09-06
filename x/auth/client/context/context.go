@@ -165,6 +165,31 @@ func (ctx TxContext) BuildWithPubKey(name string, msgs []sdk.Msg) ([]byte, error
 	return ctx.Codec.MarshalBinary(auth.NewStdTx(msg.Msgs, msg.Fee, sigs, msg.Memo))
 }
 
+// SignStdTx appends a signature to a StdTx and returns a copy of a it. If append
+// is false, it replaces the signatures already attached with the new signature.
+func (ctx TxContext) SignStdTx(name, passphrase string, stdTx auth.StdTx, appendSig bool) (signedStdTx auth.StdTx, err error) {
+	stdSignature, err := MakeSignature(name, passphrase, auth.StdSignMsg{
+		ChainID:       ctx.ChainID,
+		AccountNumber: ctx.AccountNumber,
+		Sequence:      ctx.Sequence,
+		Fee:           stdTx.Fee,
+		Msgs:          stdTx.GetMsgs(),
+		Memo:          stdTx.GetMemo(),
+	})
+	if err != nil {
+		return
+	}
+
+	sigs := stdTx.GetSignatures()
+	if len(sigs) == 0 || !appendSig {
+		sigs = []auth.StdSignature{stdSignature}
+	} else {
+		sigs = append(sigs, stdSignature)
+	}
+	signedStdTx = auth.NewStdTx(stdTx.GetMsgs(), stdTx.Fee, sigs, stdTx.GetMemo())
+	return
+}
+
 // MakeSignature builds a StdSignature given key name, passphrase, and a StdSignMsg.
 func MakeSignature(name, passphrase string, msg auth.StdSignMsg) (sig auth.StdSignature, err error) {
 	keybase, err := keys.GetKeyBase()
@@ -181,16 +206,4 @@ func MakeSignature(name, passphrase string, msg auth.StdSignMsg) (sig auth.StdSi
 		PubKey:        pubkey,
 		Signature:     sigBytes,
 	}, nil
-}
-
-// SignStdTx attach a signature to a StdTx and returns a copy of a it. If overwriteSigs is true,
-// it replaces the signatures already attached if there's any with the given signature.
-func SignStdTx(stdTx auth.StdTx, stdSignature auth.StdSignature, overwriteSigs bool) auth.StdTx {
-	sigs := stdTx.GetSignatures()
-	if len(sigs) == 0 || overwriteSigs {
-		sigs = []auth.StdSignature{stdSignature}
-	} else {
-		sigs = append(sigs, stdSignature)
-	}
-	return auth.NewStdTx(stdTx.GetMsgs(), stdTx.Fee, sigs, stdTx.GetMemo())
 }

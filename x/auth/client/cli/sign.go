@@ -50,26 +50,10 @@ func makeSignCmd(cdc *amino.Codec, decoder auth.AccountDecoder) func(cmd *cobra.
 		}
 
 		name := viper.GetString(client.FlagName)
-		keybase, err := keys.GetKeyBase()
-		if err != nil {
-			return
-		}
-		info, err := keybase.Get(name)
-		if err != nil {
-			return
-		}
-
 		cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(decoder)
-		acc, err := cliCtx.GetAccount(sdk.AccAddress(info.GetPubKey().Address()))
-		if err != nil {
-			return err
-		}
+		txCtx := authctx.NewTxContextFromCLI()
 
-		passphrase, err := keys.GetPassphrase(name)
-		if err != nil {
-			return err
-		}
-		newTx, err := signStdTx(stdTx, name, passphrase, acc)
+		newTx, err := signStdTx(txCtx, cliCtx, name, stdTx)
 		if err != nil {
 			return err
 		}
@@ -82,21 +66,37 @@ func makeSignCmd(cdc *amino.Codec, decoder auth.AccountDecoder) func(cmd *cobra.
 	}
 }
 
-func signStdTx(stdTx auth.StdTx, name, passphrase string, acc auth.Account) (signedStdTx auth.StdTx, err error) {
-	stdSignature, err := authctx.MakeSignature(name, passphrase, auth.StdSignMsg{
-		ChainID:       viper.GetString(client.FlagChainID),
-		AccountNumber: acc.GetAccountNumber(),
-		Sequence:      acc.GetSequence(),
-		Fee:           stdTx.Fee,
-		Msgs:          stdTx.GetMsgs(),
-		Memo:          stdTx.GetMemo(),
-	})
+func signStdTx(txCtx authctx.TxContext, cliCtx context.CLIContext, name string, stdTx auth.StdTx) (auth.StdTx, error) {
+	var signedStdTx auth.StdTx
+	keybase, err := keys.GetKeyBase()
 	if err != nil {
-		return
+		return signedStdTx, err
+	}
+	info, err := keybase.Get(name)
+	if err != nil {
+		return signedStdTx, err
+	}
+	addr := info.GetPubKey().Address()
+	if txCtx.AccountNumber == 0 {
+		accNum, err := cliCtx.GetAccountNumber(addr)
+		if err != nil {
+			return signedStdTx, err
+		}
+		txCtx = txCtx.WithAccountNumber(accNum)
+	}
+	if txCtx.Sequence == 0 {
+		accSeq, err := cliCtx.GetAccountSequence(addr)
+		if err != nil {
+			return signedStdTx, err
+		}
+		txCtx = txCtx.WithSequence(accSeq)
 	}
 
-	signedStdTx = authctx.SignStdTx(stdTx, stdSignature, viper.GetBool(flagOverwriteSigs))
-	return
+	passphrase, err := keys.GetPassphrase(name)
+	if err != nil {
+		return signedStdTx, err
+	}
+	return txCtx.SignStdTx(name, passphrase, stdTx, viper.GetBool(flagOverwriteSigs))
 }
 
 func printSignatures(stdTx auth.StdTx) {
